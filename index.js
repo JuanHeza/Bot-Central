@@ -1,6 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 //const { createCanvas } = require('canvas')
 const fs = require("fs")
+const { Color } = require("./colorBot")
 
 const rgbTemplate = /rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)/
 const hslTemplate = /hsl\((\d{1,3}),(\d{1,3})%,(\d{1,3})%\)/
@@ -11,7 +12,7 @@ const hexTemplate = /#([a-fA-F0-9]{3,6}$)/
 
 // Create a bot that uses 'polling' to fetch new updates
 const colorBot = new TelegramBot(process.env['color_token'], { polling: true });
-
+let cb = new Color();
 colorBot.on("callback_query", (msg) => {
     console.log(msg)
     colorBot.answerCallbackQuery(msg.id, { text: "Your color is Saved 😁", show_alert: true })
@@ -32,30 +33,23 @@ colorBot.on("inline_query", (msg) => {
 
 colorBot.on('message', (msg) => {
     const chatId = msg.chat.id;
-    let match = { hex: null, rgb: null, hsl: null, hsv: null, text: null, valid: false }
+    let match = { hex: null, rgb: null, hsl: null, hsv: null, text: msg.text, valid: false }
     msg.text = msg.text.replaceAll(" ", "").toLowerCase()
     switch (true) {
         case (hsvTemplate.exec(msg.text) || hsvTemplate2.exec(msg.text))?.length > 0:
             match.hsv = (hsvTemplate.exec(msg.text) || hsvTemplate2.exec(msg.text)).slice(1, 4);
-            match.text = msg.text;
-            match.valid = true
             break;
         case (hslTemplate.exec(msg.text) || hslTemplate2.exec(msg.text))?.length > 0:
             match.hsl = (hslTemplate.exec(msg.text) || hslTemplate2.exec(msg.text)).slice(1, 4);
-            match.text = msg.text;
-            match.valid = true
             break;
         case (rgbTemplate.exec(msg.text))?.length > 0:
             match.rgb = (rgbTemplate.exec(msg.text)).slice(1, 4);
-            match.text = msg.text;
-            match.valid = true
             break;
         case (hexTemplate.exec(msg.text))?.length > 0:
             match.hex = (hexTemplate.exec(msg.text));
-            match.text = msg.text;
-            match.valid = true
             break;
     }
+    match.valid = ( match.hex || match.hsl || match.hsv || match.rgb ) != null
     if (match.valid) {
         generatePicture()
     }
